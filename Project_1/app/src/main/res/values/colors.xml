@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="red">#FF0000</color>
+    <color name="meal_card_background">#FAFAFA</color>
+    <color name="secondary_text">#757575</color>
+    <color name="light_gray_background">#F5F5F5</color>
+    <color name="primary_text">#212121</color>
+    <!-- Add these new colors for calendar -->
+    <color name="primaryTextColor">#212121</color> <!-- Dark gray for dates -->
+    <color name="secondaryTextColor">#757575</color> <!-- Medium gray for weekdays -->
+
+    <!-- Optional accent colors -->
+    <color name="calendarSelectedDate">#FF4081</color> <!-- Pink accent for selected date -->
+    <color name="calendarToday">#3F51B5</color> <!-- Indigo for today's date -->
+
+    <!-- Add these new color definitions for tints -->
+    <color name="primary_color">#FF5722</color>  <!-- Orange -->
+    <color name="primary_color_dark">#E64A19</color>
+    <color name="primary_color_light">#FFCCBC</color>
+
+
+    <!-- State colors for favorite button -->
+    <color name="favorite_active">#F44336</color>  <!-- Red -->
+    <color name="favorite_inactive">#9E9E9E</color>  <!-- Gray -->
+
+    <!-- Calendar button states -->
+    <color name="calendar_active">#4CAF50</color>  <!-- Green -->
+    <color name="calendar_inactive">#9E9E9E</color>  <!-- Gray -->
+
+    <!-- Semi-transparent colors -->
+    <color name="semi_transparent_black">#66000000</color>
+    <color name="semi_transparent_white">#66FFFFFF</color>
+
+    <color name="gray_light">#E0E0E0</color>  <!-- Light gray color for the divider -->
+    <color name="gray_dark">#757575</color>   <!-- Dark gray color for the "OR" text -->
+
+        <color name="blue">#0000FF</color>
+    <color name="light_gray">#D3D3D3</color>
+
+    <color name="gold">#FFD700</color>
+    <color name="dark_text">#333333</color>
+
+
+</resources>
