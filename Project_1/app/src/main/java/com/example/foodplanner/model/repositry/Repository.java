@@ -55,4 +55,12 @@ public interface Repository {
     LiveData<ScheduleMeal> getScheduledMealById(String id);
 
     LiveData<List<ScheduleMeal>> getMealsForDate(String date);
+
+    LiveData<List<Meal>> getAllSavedMeals(String userId);
+
+    LiveData<Meal> getFavoriteByIdAndUserId(String mealId, String userId);
+
+    LiveData<List<ScheduleMeal>> getScheduledMealsByUserId(String userId);
+
+    public LiveData<ScheduleMeal> getScheduleMealByIdAndUserId(String mealId, String userId);
 }

@@ -22,7 +22,6 @@
     <string name="ingredient_image">Ingredient image</string>
     <string name="ingredients">Ingredients</string>
     <string name="no_favorites">No favorite meals yet</string>
-    <string name="delete">delete</string>
-
+    <string name="delete">Delete meal</string>
     <string name="default_web_client_id">911682355697-lkfra7644ild55gtqv2sjjdmr3b93fvv.apps.googleusercontent.com</string>
 </resources>

@@ -6,10 +6,8 @@ import androidx.room.PrimaryKey;
 
 import java.io.Serializable;
 
-@Entity(tableName = "sched_meals")
-public class ScheduleMeal implements Serializable {
-
-    @PrimaryKey
+@Entity(tableName = "sched_meals", primaryKeys = {"idMeal", "userId"})
+public class ScheduleMeal {
     @NonNull
     public String idMeal;
 
@@ -17,6 +15,16 @@ public class ScheduleMeal implements Serializable {
     public String strMealThumb;
     public String scheduledDate; // Format: YYYY-MM-DD
     public String mealTime; // e.g., Breakfast, Lunch, Dinner
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+    @NonNull
+    private String userId;
 
     public ScheduleMeal() {
     }
@@ -34,6 +42,14 @@ public class ScheduleMeal implements Serializable {
         this.strMealThumb = strMealThumb;
         this.scheduledDate = date;
         this.mealTime = time;
+    }
+    public ScheduleMeal(String idMeal, String strMeal, String strMealThumb, String date, String time,String userId) {
+        this.idMeal = idMeal;
+        this.strMeal = strMeal;
+        this.strMealThumb = strMealThumb;
+        this.scheduledDate = date;
+        this.mealTime = time;
+        this.userId = userId;
     }
 
     @NonNull

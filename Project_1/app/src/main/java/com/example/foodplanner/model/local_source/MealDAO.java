@@ -13,7 +13,7 @@ import java.util.List;
 
 @Dao
 public interface MealDAO {
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertMeal(Meal meal);
 
     @Delete
@@ -24,4 +24,14 @@ public interface MealDAO {
 
     @Query("SELECT * FROM meals_table WHERE idMeal = :mealId")
     LiveData<Meal> getMealById(String mealId);
+
+    @Query("SELECT * FROM meals_table WHERE userId = :userId")
+    LiveData<List<Meal>> getMealsByUserId(String userId);
+
+    @Query("SELECT * FROM meals_table WHERE idMeal = :mealId AND userId = :userId LIMIT 1")
+    LiveData<Meal> getMealByIdAndUserId(String mealId, String userId);
+
+    // Add synchronous query for debugging
+    @Query("SELECT * FROM meals_table WHERE idMeal = :mealId")
+    Meal getMealByIdSync(String mealId);
 }

@@ -1,7 +1,11 @@
 package com.example.foodplanner.mealdetails.view;
 
+import static android.content.Context.MODE_PRIVATE;
+
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
+import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -9,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,6 +24,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.foodplanner.R;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
 import com.example.foodplanner.mealdetails.presenter.MealDetailsPresenter;
 import com.example.foodplanner.mealdetails.presenter.MealDetailsPresenterImpl;
 import com.example.foodplanner.model.local_source.MealLocalDataSource;
@@ -30,7 +36,6 @@ import com.example.foodplanner.model.repositry.RepositoryImpl;
 import com.bumptech.glide.Glide;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
-import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -47,19 +52,30 @@ public class MealDetailsFragment extends Fragment implements MealDetailsView {
     private ImageButton favButton;
     private ImageButton calendarButton;
     private boolean isFavorite = false;
-    private Repository repository; // Class-level field
+    private boolean isScheduled = false;
+    private Repository repository;
+    private SharedPreferences prefs;
+    private static final String PREFS_NAME = "UserPrefs";
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
+        if (getArguments() != null && getArguments().containsKey("meal")) {
             currentMeal = (Meal) getArguments().getSerializable("meal");
-            Log.d(TAG, "Received meal: " + (currentMeal != null ? currentMeal.getStrMeal() : "null") + ", idMeal=" + (currentMeal != null ? currentMeal.getIdMeal() : "null"));
+            if (currentMeal != null) {
+                Log.d(TAG, "Received meal: " + currentMeal.getStrMeal() + ", idMeal=" + currentMeal.getIdMeal());
+            } else {
+                Log.e(TAG, "Meal object is null");
+            }
+        } else {
+            Log.e(TAG, "No meal data in arguments");
         }
 
-        // Initialize repository field
         repository = RepositoryImpl.getInstance(RemoteDataSource.getInstance(), MealLocalDataSource.getInstance(requireContext()));
         presenter = new MealDetailsPresenterImpl(this, repository, requireContext());
+
+        // Initialize SharedPreferences
+        prefs = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
     }
 
     @Nullable
@@ -84,11 +100,11 @@ public class MealDetailsFragment extends Fragment implements MealDetailsView {
         getLifecycle().addObserver(youtubePlayerView);
 
         RecyclerView ingredientsRecyclerView = rootView.findViewById(R.id.ingredientsRecyclerView);
-        ingredientsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        ingredientsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         ingredientsAdapter = new IngredientsAdapter(new ArrayList<>());
         ingredientsRecyclerView.setAdapter(ingredientsAdapter);
 
-        if (currentMeal != null && currentMeal.getIdMeal() != null) {
+        if (currentMeal != null && currentMeal.getIdMeal() != null && !currentMeal.getIdMeal().isEmpty()) {
             Log.d(TAG, "Fetching details for meal id: " + currentMeal.getIdMeal());
             showLoading();
             presenter.getMealDetails(currentMeal.getIdMeal());
@@ -99,8 +115,16 @@ public class MealDetailsFragment extends Fragment implements MealDetailsView {
     }
 
     private void toggleFavorite() {
+        // Check if user is a guest
+        boolean isGuest = prefs.getBoolean("isGuest", true); // Default to true if not set
+        if (isGuest) {
+            Toast.makeText(getContext(), "Please sign up to add meals to favorites", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (currentMeal == null) {
             Log.e(TAG, "Cannot toggle favorite: currentMeal is null");
+            showError("Cannot toggle favorite");
             return;
         }
         if (isFavorite) {
@@ -113,6 +137,13 @@ public class MealDetailsFragment extends Fragment implements MealDetailsView {
     }
 
     private void showDateTimePicker() {
+        // Check if user is a guest
+        boolean isGuest = prefs.getBoolean("isGuest", true); // Default to true if not set
+        if (isGuest) {
+            Toast.makeText(getContext(), "Please sign up to schedule meals", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (currentMeal == null || currentMeal.getIdMeal() == null || currentMeal.getStrMeal() == null) {
             Log.e(TAG, "Cannot schedule meal: currentMeal or required fields are null");
             showError("Cannot schedule meal");
@@ -120,6 +151,10 @@ public class MealDetailsFragment extends Fragment implements MealDetailsView {
         }
 
         final Calendar calendar = Calendar.getInstance();
+        final Calendar minDate = Calendar.getInstance(); // Today
+        final Calendar maxDate = Calendar.getInstance();
+        maxDate.add(Calendar.DAY_OF_MONTH, 7); // 7 days from today
+
         DatePickerDialog datePickerDialog = new DatePickerDialog(
                 requireContext(),
                 (view, year, month, dayOfMonth) -> {
@@ -138,8 +173,8 @@ public class MealDetailsFragment extends Fragment implements MealDetailsView {
                                 SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.US);
                                 String time = timeFormat.format(calendar.getTime());
 
-                                // Use fallback for strMealThumb if null
-                                String thumbnail = currentMeal.getStrMealThumb() != null ? currentMeal.getStrMealThumb() : "";
+                                String thumbnail = currentMeal.getStrMealThumb() != null ?
+                                        currentMeal.getStrMealThumb() : "";
                                 ScheduleMeal scheduleMeal = new ScheduleMeal(
                                         currentMeal.getIdMeal(),
                                         currentMeal.getStrMeal(),
@@ -147,11 +182,13 @@ public class MealDetailsFragment extends Fragment implements MealDetailsView {
                                         date,
                                         time
                                 );
-                                repository.insertScheduledMeal(scheduleMeal);
-                                // Cache full Meal for offline support
-                                repository.insertMeal(currentMeal);
-                                Log.d(TAG, "Scheduled meal: " + currentMeal.getStrMeal() + " on " + date + " at " + time);
-                                Toast.makeText(getContext(), "Meal scheduled for " + date + " at " + time, Toast.LENGTH_SHORT).show();
+                                presenter.addToSchedule(scheduleMeal, currentMeal);
+
+                                isScheduled = true;
+                                calendarButton.setImageResource(R.drawable.calender_filled);
+                                Toast.makeText(getContext(),
+                                        "Meal scheduled for " + date + " at " + time,
+                                        Toast.LENGTH_SHORT).show();
                             },
                             calendar.get(Calendar.HOUR_OF_DAY),
                             calendar.get(Calendar.MINUTE),
@@ -163,6 +200,10 @@ public class MealDetailsFragment extends Fragment implements MealDetailsView {
                 calendar.get(Calendar.MONTH),
                 calendar.get(Calendar.DAY_OF_MONTH)
         );
+
+        // Restrict date picker to current date and next 7 days
+        datePickerDialog.getDatePicker().setMinDate(minDate.getTimeInMillis());
+        datePickerDialog.getDatePicker().setMaxDate(maxDate.getTimeInMillis());
         datePickerDialog.show();
     }
 
@@ -217,9 +258,25 @@ public class MealDetailsFragment extends Fragment implements MealDetailsView {
     @Override
     public void setFavorite(boolean favoriteStatus) {
         isFavorite = favoriteStatus;
-        // Uncomment when resources are added
-        // favButton.setImageResource(isFavorite ? R.drawable.ic_favorite_filled : R.drawable.ic_favorite_border);
+        try {
+            favButton.setImageResource(isFavorite ? R.drawable.fav_filled : R.drawable.fav);
+        } catch (Resources.NotFoundException e) {
+            Log.e(TAG, "Drawable resource not found for favorite button", e);
+            favButton.setImageDrawable(null);
+        }
         Log.d(TAG, "Favorite status set: " + isFavorite);
+    }
+
+    @Override
+    public void setScheduled(boolean scheduledStatus) {
+        isScheduled = scheduledStatus;
+        try {
+            calendarButton.setImageResource(isScheduled ? R.drawable.calender_filled : R.drawable.calender);
+        } catch (Resources.NotFoundException e) {
+            Log.e(TAG, "Drawable resource not found for calendar button", e);
+            calendarButton.setImageDrawable(null);
+        }
+        Log.d(TAG, "Scheduled status set: " + isScheduled);
     }
 
     @Override
@@ -231,25 +288,27 @@ public class MealDetailsFragment extends Fragment implements MealDetailsView {
     @Override
     public void showLoading() {
         Log.d(TAG, "Showing loading indicator");
-        // Implement loading indicator if needed
     }
 
     @Override
     public void hideLoading() {
         Log.d(TAG, "Hiding loading indicator");
-        // Hide loading indicator if implemented
     }
 
     @Override
     public void showIngredientsList() {
         Log.d(TAG, "Ingredients list shown");
-        // RecyclerView is already visible
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        YouTubePlayerView youtubePlayerView = rootView.findViewById(R.id.youtubePlayerView);
+        if (youtubePlayerView != null) {
+            youtubePlayerView.release();
+        }
         presenter.onDestroy();
+        rootView = null;
     }
 
     private String extractVideoId(String youtubeUrl) {
@@ -258,7 +317,26 @@ public class MealDetailsFragment extends Fragment implements MealDetailsView {
             return null;
         }
         try {
-            return youtubeUrl.substring(youtubeUrl.indexOf("=") + 1);
+            String videoId = null;
+            if (youtubeUrl.contains("v=")) {
+                videoId = youtubeUrl.substring(youtubeUrl.indexOf("v=") + 2);
+                int ampersandIndex = videoId.indexOf('&');
+                if (ampersandIndex != -1) {
+                    videoId = videoId.substring(0, ampersandIndex);
+                }
+            } else if (youtubeUrl.contains("youtu.be/")) {
+                videoId = youtubeUrl.substring(youtubeUrl.indexOf("youtu.be/") + 9);
+                int queryIndex = videoId.indexOf('?');
+                if (queryIndex != -1) {
+                    videoId = videoId.substring(0, queryIndex);
+                }
+            }
+            if (videoId != null && !videoId.isEmpty()) {
+                Log.d(TAG, "Extracted video ID: " + videoId);
+                return videoId;
+            }
+            Log.e(TAG, "Invalid YouTube URL format: " + youtubeUrl);
+            return null;
         } catch (Exception e) {
             Log.e(TAG, "Error extracting YouTube video ID", e);
             return null;

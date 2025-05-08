@@ -17,6 +17,6 @@ public interface ISearchPresenter {
     FilterType getCurrentFilter();
     void resetSearch();
     enum FilterType {
-        CATEGORY, COUNTRY, INGREDIENT, NONE
+        CATEGORY, COUNTRY, INGREDIENT,Meal, NONE
     }
 }

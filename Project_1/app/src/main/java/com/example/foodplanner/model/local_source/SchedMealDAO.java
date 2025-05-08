@@ -8,6 +8,7 @@ import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 
 
+import com.example.foodplanner.model.pojo.Meal;
 import com.example.foodplanner.model.pojo.ScheduleMeal;
 
 import java.util.List;
@@ -29,4 +30,12 @@ public interface SchedMealDAO {
 
     @Query("SELECT * FROM sched_meals WHERE scheduledDate = :date ORDER BY mealTime")
     LiveData<List<ScheduleMeal>> getMealsForDate(String date);
+
+    @Query("SELECT * FROM sched_meals WHERE userId = :userId")
+    LiveData<List<ScheduleMeal>> getScheduledMealsByUserId(String userId);
+
+    @Query("SELECT * FROM sched_meals WHERE idMeal = :mealId AND userId = :userId LIMIT 1")
+    LiveData<ScheduleMeal> getScheduleMealByIdAndUserId(String mealId, String userId);
+
+
 }

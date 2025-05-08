@@ -1,5 +1,10 @@
 package com.example.foodplanner.search.view;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -8,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -16,6 +22,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.airbnb.lottie.LottieAnimationView;
 import com.example.foodplanner.FragmentCommunication;
 import com.example.foodplanner.R;
 import com.example.foodplanner.model.local_source.MealLocalDataSource;
@@ -41,7 +48,14 @@ public class SearchFragment extends Fragment implements SearchView {
     private ISearchPresenter presenter;
     private FilterOptionsAdapter filterOptionsAdapter;
     private MealAdapter mealAdapter;
-    private FragmentCommunication communicator; // Added
+    private FragmentCommunication communicator;
+    private ConnectivityManager connectivityManager;
+    private ConnectivityManager.NetworkCallback networkCallback;
+    private LinearLayout mainContent, noConnectionContainer;
+    private LottieAnimationView noInternetAnimation;
+    private Button retryButton;
+//    private List<Meal> Allmeals =new ArrayList<>();
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -51,10 +65,11 @@ public class SearchFragment extends Fragment implements SearchView {
                 MealLocalDataSource.getInstance(requireContext())
         );
         presenter = new SearchPresenterImpl(this, repository);
-        // Get FragmentCommunication from activity
         if (getActivity() instanceof FragmentCommunication) {
             communicator = (FragmentCommunication) getActivity();
         }
+        connectivityManager = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        setupNetworkCallback();
     }
 
     @Nullable
@@ -65,6 +80,8 @@ public class SearchFragment extends Fragment implements SearchView {
         setupAdapters();
         setupSearch();
         setupButtons();
+        setupRetryButton();
+        checkNetworkState();
         return view;
     }
 
@@ -76,11 +93,17 @@ public class SearchFragment extends Fragment implements SearchView {
         filterOptionsRecyclerView = view.findViewById(R.id.filter_options_recycler_view);
         mealsRecyclerView = view.findViewById(R.id.meals_recycler_view);
         emptyStateText = view.findViewById(R.id.empty_state_text);
+
+        // Network related views
+        mainContent = view.findViewById(R.id.main_content);
+        noConnectionContainer = view.findViewById(R.id.no_connection_container);
+        noInternetAnimation = view.findViewById(R.id.no_internet_animation);
+        retryButton = view.findViewById(R.id.retry_button);
     }
 
     private void setupAdapters() {
         filterOptionsAdapter = new FilterOptionsAdapter(new ArrayList<>(), this::onFilterItemClicked);
-        mealAdapter = new MealAdapter(new ArrayList<>(), communicator); // Pass communicator
+        mealAdapter = new MealAdapter(new ArrayList<>(), communicator);
 
         filterOptionsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         filterOptionsRecyclerView.setAdapter(filterOptionsAdapter);
@@ -96,6 +119,11 @@ public class SearchFragment extends Fragment implements SearchView {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (!isNetworkAvailable()) {
+                    updateNetworkUI(false);
+                    return;
+                }
+
                 String query = s.toString().trim();
                 if (presenter.getCurrentFilter() == ISearchPresenter.FilterType.NONE) {
                     presenter.searchMealsByName(query);
@@ -110,12 +138,86 @@ public class SearchFragment extends Fragment implements SearchView {
     }
 
     private void setupButtons() {
-        categoryButton.setOnClickListener(v -> presenter.setCurrentFilter(ISearchPresenter.FilterType.CATEGORY));
-        countryButton.setOnClickListener(v -> presenter.setCurrentFilter(ISearchPresenter.FilterType.COUNTRY));
-        ingredientButton.setOnClickListener(v -> presenter.setCurrentFilter(ISearchPresenter.FilterType.INGREDIENT));
+        categoryButton.setOnClickListener(v -> {
+            if (isNetworkAvailable()) {
+                presenter.setCurrentFilter(ISearchPresenter.FilterType.CATEGORY);
+            } else {
+                updateNetworkUI(false);
+            }
+        });
+
+        countryButton.setOnClickListener(v -> {
+            if (isNetworkAvailable()) {
+                presenter.setCurrentFilter(ISearchPresenter.FilterType.COUNTRY);
+            } else {
+                updateNetworkUI(false);
+            }
+        });
+
+        ingredientButton.setOnClickListener(v -> {
+            if (isNetworkAvailable()) {
+                presenter.setCurrentFilter(ISearchPresenter.FilterType.INGREDIENT);
+            } else {
+                updateNetworkUI(false);
+            }
+        });
+    }
+
+    private void setupNetworkCallback() {
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {
+                requireActivity().runOnUiThread(() -> updateNetworkUI(true));
+            }
+
+            @Override
+            public void onLost(Network network) {
+                requireActivity().runOnUiThread(() -> updateNetworkUI(false));
+            }
+        };
+    }
+
+    private void checkNetworkState() {
+        updateNetworkUI(isNetworkAvailable());
+    }
+
+    private void updateNetworkUI(boolean isNetworkAvailable) {
+        if (isNetworkAvailable) {
+            mainContent.setVisibility(View.VISIBLE);
+            noConnectionContainer.setVisibility(View.GONE);
+            noInternetAnimation.pauseAnimation();
+        } else {
+            mainContent.setVisibility(View.GONE);
+            noConnectionContainer.setVisibility(View.VISIBLE);
+            noInternetAnimation.playAnimation();
+            showError("No internet connection");
+        }
+    }
+
+    private void setupRetryButton() {
+        retryButton.setOnClickListener(v -> checkNetworkState());
+    }
+
+    private boolean isNetworkAvailable() {
+        try {
+            Network network = connectivityManager.getActiveNetwork();
+            if (network == null) return false;
+
+            NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(network);
+            return capabilities != null &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private void onFilterItemClicked(String filterItem) {
+        if (!isNetworkAvailable()) {
+            updateNetworkUI(false);
+            return;
+        }
+
         switch (presenter.getCurrentFilter()) {
             case CATEGORY:
                 presenter.searchMealsByCategory(filterItem);
@@ -131,6 +233,7 @@ public class SearchFragment extends Fragment implements SearchView {
 
     @Override
     public void showMeals(List<Meal> meals) {
+        //this.Allmeals=meals;
         mealAdapter.updateMeals(meals != null ? meals : new ArrayList<>());
         mealsRecyclerView.setVisibility(View.VISIBLE);
         filterOptionsRecyclerView.setVisibility(View.GONE);
@@ -170,5 +273,24 @@ public class SearchFragment extends Fragment implements SearchView {
     public void showEmptyState() {
         emptyStateText.setText(R.string.no_results_found);
         emptyStateText.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        NetworkRequest networkRequest = new NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build();
+        connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
+        checkNetworkState();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (networkCallback != null) {
+            connectivityManager.unregisterNetworkCallback(networkCallback);
+        }
+        noInternetAnimation.pauseAnimation();
     }
 }

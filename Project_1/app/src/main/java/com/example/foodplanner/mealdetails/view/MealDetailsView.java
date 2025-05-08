@@ -9,4 +9,7 @@ public interface MealDetailsView {
     void showLoading();
     void hideLoading();
     void showIngredientsList();
+
+    void setScheduled(boolean ScheduledStatus);
+
 }

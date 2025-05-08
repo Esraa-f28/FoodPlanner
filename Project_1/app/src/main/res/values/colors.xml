@@ -16,6 +16,10 @@
     <color name="primaryTextColor">#212121</color> <!-- Dark gray for dates -->
     <color name="secondaryTextColor">#757575</color> <!-- Medium gray for weekdays -->
 
+    <color name="light_orange">#FFE0B2</color>
+    <color name="dark_orange">#FF5722</color>
+    <color name="light_orange_background">#FFF8E1</color>
+
     <!-- Optional accent colors -->
     <color name="calendarSelectedDate">#FF4081</color> <!-- Pink accent for selected date -->
     <color name="calendarToday">#3F51B5</color> <!-- Indigo for today's date -->

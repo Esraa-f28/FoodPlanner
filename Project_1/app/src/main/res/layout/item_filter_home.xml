@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:pp="http://schemas.android.com/tools"
     android:id="@+id/filter_option_card"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
     app:cardCornerRadius="8dp"
-    app:cardElevation="4dp">
+    app:cardElevation="4dp"
+    pp:cardBackgroundColor="#FFFFFFFF"
+    app:strokeColor="#FFE0B2"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="wrap_content"

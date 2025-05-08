@@ -1,72 +1,119 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:background="@android:color/white">
 
-    <!-- Search Input -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Search meals...">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/search_edit_text"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:imeOptions="actionSearch"
-            android:inputType="text"/>
-
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <!-- Filter Buttons -->
+    <!-- Main content -->
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/category_button"
-            style="@style/FilterButtonStyle"
-            android:text="@string/categories"/>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/country_button"
-            style="@style/FilterButtonStyle"
-            android:text="@string/countries"/>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/ingredient_button"
-            style="@style/FilterButtonStyle"
-            android:text="@string/ingredients"/>
-    </LinearLayout>
-
-    <!-- Filter Options RecyclerView -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/filter_options_recycler_view"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="gone"
-        android:padding="4dp"/>
-
-    <!-- Meals RecyclerView -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/meals_recycler_view"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="4dp"/>
-
-    <!-- Empty State View -->
-    <TextView
-        android:id="@+id/empty_state_text"
+        android:id="@+id/main_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Search Input -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Search meals..."
+            app:boxBackgroundColor="#F5F5DC"
+            app:boxStrokeColor="#A1887F">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/search_edit_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionSearch"
+                android:inputType="text"/>
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Filter Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/category_button"
+                style="@style/SmallOrangeFilterButtonStyle"
+                android:text="@string/categories"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/country_button"
+                style="@style/SmallOrangeFilterButtonStyle"
+                android:text="@string/countries"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/ingredient_button"
+                style="@style/SmallOrangeFilterButtonStyle"
+                android:text="@string/ingredients"/>
+
+        </LinearLayout>
+
+        <!-- Filter Options RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/filter_options_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="gone"
+            android:padding="4dp"/>
+
+        <!-- Meals RecyclerView -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/meals_recycler_view"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="4dp"/>
+
+        <!-- Empty State View -->
+        <TextView
+            android:id="@+id/empty_state_text"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="@string/no_results_found"
+            android:visibility="gone"/>
+
+    </LinearLayout>
+
+    <!-- No connection container -->
+    <LinearLayout
+        android:id="@+id/no_connection_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
         android:gravity="center"
-        android:text="@string/no_results_found"
-        android:visibility="gone"/>
-</LinearLayout>
+        android:visibility="gone">
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/no_internet_animation"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            app:lottie_rawRes="@raw/nointernet"
+            app:lottie_autoPlay="true"
+            app:lottie_loop="true"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No Internet Connection"
+            android:textSize="18sp"
+            android:layout_marginBottom="16dp"/>
+
+        <Button
+            android:id="@+id/retry_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="#FF6200"
+            android:text="Retry"/>
+
+    </LinearLayout>
+
+</FrameLayout>

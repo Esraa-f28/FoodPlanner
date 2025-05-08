@@ -177,4 +177,26 @@ public class RepositoryImpl implements Repository {
     public LiveData<List<ScheduleMeal>> getMealsForDate(String date) {
         return localDataSource.getMealsForDate(date);
     }
+
+    @Override
+    public LiveData<List<Meal>> getAllSavedMeals(String userId) {
+        return localDataSource.getMealsByUserId(userId);
+    }
+
+    @Override
+    public LiveData<Meal> getFavoriteByIdAndUserId(String mealId, String userId) {
+        Log.d("RepositoryImpl", "Checking favorite for mealId: " + mealId + ", userId: " + userId);
+        return localDataSource.getMealByIdAndUserId(mealId, userId);
+    }
+
+    @Override
+    public LiveData<List<ScheduleMeal>> getScheduledMealsByUserId(String userId) {
+        Log.d("RepositoryImpl", "Fetching scheduled meals for userId: " + userId);
+        return localDataSource.getScheduledMealsByUserId(userId);
+    }
+    @Override
+    public LiveData<ScheduleMeal> getScheduleMealByIdAndUserId(String mealId, String userId) {
+        return localDataSource.getScheduleMealByIdAndUserId(mealId, userId);
+    }
+
 }

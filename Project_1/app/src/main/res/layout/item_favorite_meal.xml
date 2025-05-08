@@ -40,6 +40,12 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:textSize="14sp"/>
+            <TextView
+                android:id="@+id/meal_time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textSize="14sp"/>
         </LinearLayout>
 
         <ImageButton
@@ -50,6 +56,6 @@
             android:layout_alignParentRight="true"
             android:layout_centerVertical="true"
             android:src="@drawable/ic_delete"
-            android:background="?attr/selectableItemBackgroundBorderless"/>
+            android:background="@android:color/transparent"/>
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

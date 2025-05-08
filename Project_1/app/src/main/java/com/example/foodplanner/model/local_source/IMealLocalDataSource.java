@@ -19,8 +19,15 @@ public interface IMealLocalDataSource {
     void insertSchedMeal(ScheduleMeal meal);
     void deleteSchedMeal(ScheduleMeal meal);
 
+    public LiveData<List<Meal>> getMealsByUserId(String userId);
+
     LiveData<ScheduleMeal> getSchedMealById(String id);
 
     LiveData<List<ScheduleMeal>> getMealsForDate(String date);
+
+    LiveData<Meal> getMealByIdAndUserId(String mealId, String userId);
+    LiveData<List<ScheduleMeal>> getScheduledMealsByUserId(String userId);
+
+    LiveData<ScheduleMeal> getScheduleMealByIdAndUserId(String mealId, String userId);
 
 }

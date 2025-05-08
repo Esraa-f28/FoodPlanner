@@ -2,17 +2,24 @@ package com.example.foodplanner.homepage.view;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.airbnb.lottie.LottieAnimationView;
 import com.example.foodplanner.FragmentCommunication;
 import com.example.foodplanner.FragmentCommunicator;
 import com.example.foodplanner.R;
@@ -47,6 +54,11 @@ public class HomeFragment extends Fragment implements HomeView {
     private static final String PREFS_NAME = "MealOfTheDayPrefs";
     private static final String MEAL_KEY = "meal";
     private static final String TIMESTAMP_KEY = "timestamp";
+    private ConnectivityManager connectivityManager;
+    private ConnectivityManager.NetworkCallback networkCallback;
+    private LinearLayout mainContent, noConnectionContainer;
+    private LottieAnimationView noInternetAnimation;
+    private Button retryButton;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -63,6 +75,8 @@ public class HomeFragment extends Fragment implements HomeView {
         if (getActivity() instanceof FragmentCommunication) {
             mealCommunicator = (FragmentCommunication) getActivity();
         }
+        connectivityManager = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        setupNetworkCallback();
         loadCachedMeal();
     }
 
@@ -72,18 +86,27 @@ public class HomeFragment extends Fragment implements HomeView {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
         initializeViews(view);
         setupAdapters();
-        if (currentMealOfTheDay == null || isMealExpired()) {
+        setupRetryButton();
+        checkNetworkState();
+        if (isNetworkAvailable() && (currentMealOfTheDay == null || isMealExpired())) {
             presenter.getRandomMeal();
-        } else {
+        } else if (currentMealOfTheDay != null) {
             showRandomMeal(currentMealOfTheDay);
         }
-        presenter.getCategories();
-        presenter.getCountries();
-        presenter.getIngredients();
+        if (isNetworkAvailable()) {
+            presenter.getCategories();
+            presenter.getCountries();
+            presenter.getIngredients();
+        }
         return view;
     }
 
     private void initializeViews(View view) {
+        mainContent = view.findViewById(R.id.main_content);
+        noConnectionContainer = view.findViewById(R.id.no_connection_container);
+        noInternetAnimation = view.findViewById(R.id.no_internet_animation);
+        retryButton = view.findViewById(R.id.retry_button);
+
         welcomeText = view.findViewById(R.id.welcome_text);
         welcomeText.setText("Welcome back! Discover delicious meals");
 
@@ -130,20 +153,59 @@ public class HomeFragment extends Fragment implements HomeView {
         ingredientsMealsRecyclerView.setAdapter(ingredientsMealsAdapter);
     }
 
-    private void onFilterSelected(String filterType, String filterValue) {
-        Log.d(TAG, "Filter selected: type=" + filterType + ", value=" + filterValue);
-        // Hide all meals RecyclerViews
-        categoriesMealsRecyclerView.setVisibility(View.GONE);
-        countriesMealsRecyclerView.setVisibility(View.GONE);
-        ingredientsMealsRecyclerView.setVisibility(View.GONE);
+//    private void onFilterSelected(String filterType, String filterValue) {
+//        Log.d(TAG, "Filter selected: type=" + filterType + ", value=" + filterValue);
+//        // Hide all meals RecyclerViews
+//        categoriesMealsRecyclerView.setVisibility(View.GONE);
+//        countriesMealsRecyclerView.setVisibility(View.GONE);
+//        ingredientsMealsRecyclerView.setVisibility(View.GONE);
+//
+//        // Clear previous meals
+//        categoriesMealsAdapter.updateMeals(new ArrayList<>());
+//        countriesMealsAdapter.updateMeals(new ArrayList<>());
+//        ingredientsMealsAdapter.updateMeals(new ArrayList<>());
+//
+//        // Show the appropriate meals RecyclerView and fetch meals
+//        currentFilterSection = filterType;
+//        if (isNetworkAvailable()) {
+//            switch (filterType) {
+//                case "category":
+//                    categoriesMealsRecyclerView.setVisibility(View.VISIBLE);
+//                    presenter.getMealsByCategory(filterValue);
+//                    break;
+//                case "country":
+//                    countriesMealsRecyclerView.setVisibility(View.VISIBLE);
+//                    presenter.getMealsByCountry(filterValue);
+//                    break;
+//                case "ingredient":
+//                    ingredientsMealsRecyclerView.setVisibility(View.VISIBLE);
+//                    presenter.getMealsByIngredient(filterValue);
+//                    break;
+//            }
+//        } else {
+//            updateNetworkUI(false);
+//        }
+//    }
+private void onFilterSelected(String filterType, String filterValue) {
+    Log.d(TAG, "Filter selected: type=" + filterType + ", value=" + filterValue);
+    if (filterType == null || (!filterType.equals("category") && !filterType.equals("country") && !filterType.equals("ingredient"))) {
+        Log.e(TAG, "Invalid filter type: " + filterType);
+        showError("Invalid filter selected");
+        return;
+    }
+    // Hide all meals RecyclerViews
+    categoriesMealsRecyclerView.setVisibility(View.GONE);
+    countriesMealsRecyclerView.setVisibility(View.GONE);
+    ingredientsMealsRecyclerView.setVisibility(View.GONE);
 
-        // Clear previous meals
-        categoriesMealsAdapter.updateMeals(new ArrayList<>());
-        countriesMealsAdapter.updateMeals(new ArrayList<>());
-        ingredientsMealsAdapter.updateMeals(new ArrayList<>());
+    // Clear previous meals
+    categoriesMealsAdapter.updateMeals(new ArrayList<>());
+    countriesMealsAdapter.updateMeals(new ArrayList<>());
+    ingredientsMealsAdapter.updateMeals(new ArrayList<>());
 
-        // Show the appropriate meals RecyclerView and fetch meals
-        currentFilterSection = filterType;
+    // Show the appropriate meals RecyclerView and fetch meals
+    currentFilterSection = filterType;
+    if (isNetworkAvailable()) {
         switch (filterType) {
             case "category":
                 categoriesMealsRecyclerView.setVisibility(View.VISIBLE);
@@ -158,8 +220,10 @@ public class HomeFragment extends Fragment implements HomeView {
                 presenter.getMealsByIngredient(filterValue);
                 break;
         }
+    } else {
+        updateNetworkUI(false);
     }
-
+}
     private void loadCachedMeal() {
         String mealJson = preferences.getString(MEAL_KEY, null);
         if (mealJson != null) {
@@ -182,6 +246,78 @@ public class HomeFragment extends Fragment implements HomeView {
                 .putString(MEAL_KEY, mealJson)
                 .putLong(TIMESTAMP_KEY, System.currentTimeMillis())
                 .apply();
+    }
+
+    private void setupNetworkCallback() {
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override
+            public void onAvailable(Network network) {
+                requireActivity().runOnUiThread(() -> {
+                    Log.d(TAG, "onAvailable: Network restored");
+                    updateNetworkUI(true);
+                });
+            }
+
+            @Override
+            public void onLost(Network network) {
+                requireActivity().runOnUiThread(() -> {
+                    Log.d(TAG, "onLost: Network lost");
+                    updateNetworkUI(false);
+                });
+            }
+        };
+        Log.d(TAG, "Network callback initialized");
+    }
+
+    private void checkNetworkState() {
+        boolean isNetworkAvailable = isNetworkAvailable();
+        Log.d(TAG, "checkNetworkState: Network available=" + isNetworkAvailable);
+        updateNetworkUI(isNetworkAvailable);
+    }
+
+    private void updateNetworkUI(boolean isNetworkAvailable) {
+        if (isNetworkAvailable) {
+            mainContent.setVisibility(View.VISIBLE);
+            noConnectionContainer.setVisibility(View.GONE);
+            noInternetAnimation.pauseAnimation();
+            // Refresh data if needed
+            if (currentMealOfTheDay == null || isMealExpired()) {
+                presenter.getRandomMeal();
+            }
+            presenter.getCategories();
+            presenter.getCountries();
+            presenter.getIngredients();
+        } else {
+            mainContent.setVisibility(View.GONE);
+            noConnectionContainer.setVisibility(View.VISIBLE);
+            noInternetAnimation.playAnimation();
+        }
+    }
+
+    private void setupRetryButton() {
+        retryButton.setOnClickListener(v -> {
+            Log.d(TAG, "Retry button clicked");
+            checkNetworkState();
+        });
+    }
+
+    private boolean isNetworkAvailable() {
+        try {
+            Network network = connectivityManager.getActiveNetwork();
+            if (network == null) {
+                Log.d(TAG, "isNetworkAvailable: No active network");
+                return false;
+            }
+            NetworkCapabilities capabilities = connectivityManager.getNetworkCapabilities(network);
+            boolean isAvailable = capabilities != null &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+            Log.d(TAG, "isNetworkAvailable: " + isAvailable);
+            return isAvailable;
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking network availability", e);
+            return false;
+        }
     }
 
     @Override
@@ -212,14 +348,34 @@ public class HomeFragment extends Fragment implements HomeView {
         ingredientsAdapter.updateOptions(ingredients);
     }
 
+//    @Override
+//    public void showMealsByFilter(List<Meal> meals) {
+//        Log.d(TAG, "Showing meals for filter: " + currentFilterSection + ", count=" + (meals != null ? meals.size() : "null"));
+//        if (meals == null || meals.isEmpty()) {
+//            showError("No meals found for " + currentFilterSection);
+//            return;
+//        }
+//        switch (currentFilterSection) {
+//            case "category":
+//                categoriesMealsAdapter.updateMeals(meals);
+//                break;
+//            case "country":
+//                countriesMealsAdapter.updateMeals(meals);
+//                break;
+//            case "ingredient":
+//                ingredientsMealsAdapter.updateMeals(meals);
+//                break;
+//        }
+//    }
     @Override
     public void showMealsByFilter(List<Meal> meals) {
         Log.d(TAG, "Showing meals for filter: " + currentFilterSection + ", count=" + (meals != null ? meals.size() : "null"));
         if (meals == null || meals.isEmpty()) {
-            showError("No meals found for " + currentFilterSection);
+            showError("No meals found for " + (currentFilterSection != null ? currentFilterSection : "unknown"));
             return;
         }
-        switch (currentFilterSection) {
+        String filterSection = currentFilterSection != null ? currentFilterSection : "category";
+        switch (filterSection) {
             case "category":
                 categoriesMealsAdapter.updateMeals(meals);
                 break;
@@ -231,10 +387,40 @@ public class HomeFragment extends Fragment implements HomeView {
                 break;
         }
     }
-
     @Override
     public void showError(String message) {
         Log.e(TAG, "Error: " + message);
         android.widget.Toast.makeText(getContext(), message, android.widget.Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume: Registering network callback");
+        try {
+            NetworkRequest networkRequest = new NetworkRequest.Builder()
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .build();
+            connectivityManager.registerNetworkCallback(networkRequest, networkCallback);
+            Log.d(TAG, "Network callback registered");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to register network callback", e);
+        }
+        checkNetworkState();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPause: Unregistering network callback");
+        try {
+            if (networkCallback != null) {
+                connectivityManager.unregisterNetworkCallback(networkCallback);
+                Log.d(TAG, "Network callback unregistered");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to unregister network callback", e);
+        }
+        noInternetAnimation.pauseAnimation();
     }
 }

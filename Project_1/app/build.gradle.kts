@@ -59,7 +59,6 @@ dependencies {
     implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.6.2")
 
 
-    implementation("com.airbnb.android:lottie:6.3.0")
     implementation ("com.google.android.material:material:1.6.0")
 
     implementation ("com.prolificinteractive:material-calendarview:1.4.3")
@@ -72,6 +71,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
 
     implementation("com.google.firebase:firebase-analytics")
+    implementation("com.airbnb.android:lottie:6.3.0")
 
 
 }

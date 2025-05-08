@@ -1,15 +1,14 @@
 package com.example.foodplanner.model.pojo;
 
 import androidx.annotation.NonNull;
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
 import java.io.Serializable;
 
-@Entity(tableName = "meals_table")
-public class Meal implements Serializable {
-
-    @PrimaryKey
+@Entity(tableName = "meals_table",primaryKeys = {"userId","idMeal"})
+public class Meal implements Serializable{
     @NonNull
     public String idMeal;
     public String strMeal;
@@ -19,6 +18,16 @@ public class Meal implements Serializable {
     public String strMealThumb;
     public String strYoutube;
     public String strSource;
+@NonNull
+    @ColumnInfo(name = "userId")
+    private String userId;
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
 
     public String strIngredient1;
     public String strIngredient2;
